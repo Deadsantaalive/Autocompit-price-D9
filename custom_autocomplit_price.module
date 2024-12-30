@@ -1,0 +1,45 @@
+<?php
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\Core\Database\Database;
+use Drupal\node\Entity\Node;
+
+
+/**
+ * Implements hook_preprocess_HOOK() for node templates.
+ */
+function custom_autocomplit_price_preprocess_node(&$variables) {
+  // Match all paragraphs of type 'line_price' based on field values field_id_for_autocomplite.
+  $paragraph_ids = \Drupal::entityQuery('paragraph')
+    ->condition('type', 'line_price')
+    ->execute();
+
+  // Check what paragraphs are.
+  if (!empty($paragraph_ids)) {
+    $paragraph_info = [];
+
+    //Omit information about the skin paragraph.
+    foreach ($paragraph_ids as $paragraph_id) {
+      $paragraph = Paragraph::load($paragraph_id);
+      $field_id_for_autocomplite = $paragraph->get('field_id_for_autocomplite')->getValue();
+      $field_cena = $paragraph->get('field_cena')->getString();
+      $node_id = $paragraph->getParentEntity()->id();
+      $node_title = $paragraph->getParentEntity()->getTitle();
+
+      // Check if the field field_id_for_autocomplite is filled in.
+      if (!empty($field_id_for_autocomplite[0]['value'])) {
+        // Add information about the paragraph to the array.
+        $paragraph_info[] = [
+          'paragraph_id' => $paragraph_id,
+          'node_id' => $node_id,
+          'node_title' => $node_title,
+          'field_id_for_autocomplite' => $field_id_for_autocomplite[0]['value'],
+          'field_cena' => $field_cena,
+        ];
+      }
+    }
+
+    // Pass information about paragraphs to the username for the Twig template.
+    $variables['paragraph_info'] = $paragraph_info;
+  }
+
+}
